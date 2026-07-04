@@ -15,10 +15,9 @@ stages:
   - job: BuildJob
     pool:
       vmImage: $(vmImageName)
-
-    - task: ArchiveFiles@2
+    steps:
+    - task: 
       displayName: 'Archive Application Files'
-      inputs:
         rootFolderOrFile: '$(rootFolder)'
         includeRootFolder: false
         archiveType: 'zip'
