@@ -2,7 +2,6 @@ trigger:
   - main # Triggers the pipeline when a push happens to the main branch
 
 variables:
-  # UPDATE THESE TWO VARIABLES
   azureServiceConnection: Azure-Subscription-Connection
   webAppName: vaultbridgefinancial
   
@@ -16,11 +15,6 @@ stages:
   - job: BuildJob
     pool:
       vmImage: $(vmImageName)
-    steps:
-    # Optional: If you use Composer, uncomment the lines below to pull your dependencies
-    # - script: |
-    #     composer install --no-interaction --prefer-dist --no-dev
-    #   displayName: 'Install Composer Dependencies'
 
     - task: ArchiveFiles@2
       displayName: 'Archive Application Files'
