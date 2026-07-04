@@ -1,0 +1,62 @@
+trigger:
+  - main # Triggers the pipeline when a push happens to the main branch
+
+variables:
+  # UPDATE THESE TWO VARIABLES
+  azureServiceConnection: Azure-Subscription-Connection
+  webAppName: vaultbridgefinancial
+  
+  vmImageName: 'ubuntu-latest'
+  rootFolder: '$(System.DefaultWorkingDirectory)'
+
+stages:
+- stage: Build
+  displayName: 'Build and Package'
+  jobs:
+  - job: BuildJob
+    pool:
+      vmImage: $(vmImageName)
+    steps:
+    # Optional: If you use Composer, uncomment the lines below to pull your dependencies
+    # - script: |
+    #     composer install --no-interaction --prefer-dist --no-dev
+    #   displayName: 'Install Composer Dependencies'
+
+    - task: ArchiveFiles@2
+      displayName: 'Archive Application Files'
+      inputs:
+        rootFolderOrFile: '$(rootFolder)'
+        includeRootFolder: false
+        archiveType: 'zip'
+        archiveFile: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+        replaceExistingArchive: true
+
+    - task: PublishBuildArtifacts@1
+      displayName: 'Publish Package Artifact'
+      inputs:
+        PathtoPublish: '$(Build.ArtifactStagingDirectory)/$(Build.BuildId).zip'
+        ArtifactName: 'drop'
+        publishLocation: 'Container'
+
+- stage: Deploy
+  displayName: 'Deploy to Azure'
+  dependsOn: Build
+  condition: succeeded()
+  jobs:
+  - deployment: DeployWebApp
+    displayName: 'Deploy Web App Job'
+    pool:
+      vmImage: $(vmImageName)
+    environment: 'production'
+    strategy:
+      runOnce:
+        deploy:
+          steps:
+          - task: AzureRmWebAppDeployment@4
+            displayName: 'Azure Web App Deploy'
+            inputs:
+              ConnectionType: 'AzureRM'
+              azureSubscription: '$(azureServiceConnection)'
+              appType: 'webAppLinux' # Change to 'webApp' if you created a Windows-based Web App
+              WebAppName: '$(webAppName)'
+              packageForLinux: '$(Pipeline.Workspace)/drop/$(Build.BuildId).zip'
